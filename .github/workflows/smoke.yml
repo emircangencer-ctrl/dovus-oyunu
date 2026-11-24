@@ -5,12 +5,12 @@ on:
   workflow_dispatch:
     inputs:
       url:
-        description: 'Denetlenecek adres (ör. https://asama-0-dovus-oyunu.<alt-alan>.workers.dev)'
+        description: "Denetlenecek adres (ör. https://asama-0-dovus-oyunu.<alt-alan>.workers.dev)"
         required: true
       expect_version:
-        description: 'Beklenen 7 karakterlik commit kodu (boş bırakılabilir)'
+        description: "Beklenen 7 karakterlik commit kodu (boş bırakılabilir)"
         required: false
-        default: ''
+        default: ""
 
 permissions:
   contents: read
