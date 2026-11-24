@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+  - tools/*
+
+# pnpm 10 kurulum betiklerini varsayılan olarak engeller; yalnızca Wrangler'ın ihtiyaç duyduğu ikisine izin verilir.
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
