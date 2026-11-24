@@ -1,6 +1,6 @@
-# Dövüş Oyunu
+# SysKO
 
-Tarayıcıda (ve ileride Windows masaüstünde) çalışan, MUGEN ruhunda, HD pixel art karakterli 2D dövüş oyunu. Emir ve yakın çevresi için; aile içinde yerel ve online oynanır.
+SysKO: tarayıcıda (ve ileride Windows masaüstünde) çalışan, MUGEN ruhunda, HD pixel art karakterli 2D dövüş oyunu. Emir ve yakın çevresi için; aile içinde yerel ve online oynanır.
 
 - Tasarım dokümanı (kanonik): https://claude.ai/artifact/YZySHevHDL6XFd8txZquhE — depo kopyası `docs/superpowers/specs/`
 - Aşama planları: `docs/superpowers/plans/`
