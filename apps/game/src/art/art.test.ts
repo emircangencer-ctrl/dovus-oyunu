@@ -13,7 +13,7 @@ function readWebp(name: string): WebpInfo {
   expect(b.toString('ascii', 8, 12)).toBe('WEBP');
   const chunk = b.toString('ascii', 12, 16);
   if (chunk === 'VP8X') {
-    const alpha = (b[20] & 0x10) !== 0;
+    const alpha = (b.readUInt8(20) & 0x10) !== 0;
     const width = 1 + b.readUIntLE(24, 3);
     const height = 1 + b.readUIntLE(27, 3);
     return { width, height, alpha };
