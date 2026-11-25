@@ -11,9 +11,8 @@ test.describe('yayın duman testi', () => {
   test('sayfadaki sürüm /api/health ile aynı', async ({ page, request }) => {
     const health = await (await request.get('/api/health')).json();
     await page.goto('/');
-    const text = await page.getByTestId('surum').textContent({ timeout: 10_000 });
-    await expect(page.getByTestId('surum')).toHaveText(/^Sürüm: (dev|[0-9a-f]{7}) \(.+\)$/);
-    expect(text).toBe(`Sürüm: ${health.version} (${health.branch})`);
+    // Sürüm satırı /api/health cevabı gelince dolar; toHaveText o ana kadar bekler.
+    await expect(page.getByTestId('surum')).toHaveText(`Sürüm: ${health.version} (${health.branch})`);
     if (expected) expect(health.version).toBe(expected);
   });
 });

@@ -4,6 +4,13 @@ SysKO: tarayıcıda (ve ileride Windows masaüstünde) çalışan, MUGEN ruhunda
 
 - Tasarım dokümanı (kanonik): https://claude.ai/artifact/YZySHevHDL6XFd8txZquhE — depo kopyası `docs/superpowers/specs/`
 - Aşama planları: `docs/superpowers/plans/`
+- Onaylı ekran tasarımları (16 ekran, kale teması; Emir onayı 2026-11-25): https://claude.ai/artifact/YHqLwH6gqvpjpvcJ7Ezb4A
+- Tasarım sistemi (renkler, yazı, bileşenler): https://claude.ai/artifact/8DV46x9KQq4fch4AevUMft
+
+## Görseller ve arayüz kiti
+
+- Sanatsal görseller (arka planlar, logo, sahneler) Canva AI ile üretilir. Menü arka planı ve logo `tools/art/prepare.py` ile `apps/game/public/art/` altına hazırlanır.
+- Arayüz kiti (piksel çerçeveler, butonlar, kurdeleler, tablolar) `tools/ui-kit/kit.py` ile `apps/game/src/ui/kit.css` olarak üretilir; bu dosya elle değiştirilmez. Renkler `apps/game/src/ui/tokens.json`'dan gelir.
 
 ## Gereksinimler
 
