@@ -34,6 +34,10 @@ importers:
         version: 4.168.0(@types/node@22.20.5)(vitest@5.1.1(@types/node@22.20.5)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)))
 
   apps/game:
+    dependencies:
+      '@dovus/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
     devDependencies:
       vite:
         specifier: 8.3.8

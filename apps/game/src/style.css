@@ -194,3 +194,57 @@ body {
 .surum {
   color: var(--steel-300);
 }
+
+/* ---------- Hız testi (Aşama 1a teknik kanıt) ---------- */
+.hiz-testi {
+  pointer-events: none;
+}
+
+.hiz-paneli {
+  position: absolute;
+  left: 160px;
+  top: 110px;
+  width: 1600px;
+  pointer-events: auto;
+}
+
+.hiz-izgara {
+  display: grid;
+  grid-template-columns: 1fr 520px;
+  gap: 32px;
+  align-items: start;
+}
+
+.hiz-tablo {
+  width: 100%;
+}
+
+.hiz-tablo td {
+  padding: 4px 16px;
+}
+
+.hiz-yan .ds-btn[hidden] {
+  display: none;
+}
+
+.hiz-sonuc {
+  margin: 0 0 12px;
+  font: 400 74.667px / 1.1 var(--font-pixel);
+  color: var(--gold-300);
+  text-shadow: 0 4px 0 var(--ink-950);
+}
+
+.hiz-sonuc[data-sonuc="GEÇTİ"] {
+  color: var(--go-300);
+}
+
+.hiz-sonuc[data-sonuc="KALDI"],
+.hiz-sonuc[data-sonuc="GEÇERSİZ"] {
+  color: var(--stop-300);
+}
+
+.hiz-not {
+  margin: 12px 0 0;
+  font: 400 37.333px / 1.25 var(--font-pixel);
+  color: var(--text-secondary);
+}
