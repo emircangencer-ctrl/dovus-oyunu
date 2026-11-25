@@ -44,13 +44,13 @@ interface Panel {
   readonly stage: HTMLElement;
   readonly version: HTMLElement;
   readonly start: HTMLButtonElement;
-  update(sum: Summary, target: number, running: boolean): void;
+  update(sum: Summary, target: number, running: boolean, countdown?: string): void;
 }
 
-function buildPanel(ui: HTMLElement): Panel {
+function buildPanel(ui: HTMLElement, control: boolean): Panel {
   const stage = el('div', { class: 'sahne hiz-testi', 'data-testid': 'sahne' });
   const panel = el('section', { class: 'ds-panel ds-panel--ribbon hiz-paneli' });
-  panel.append(el('span', { class: 'ds-ribbon' }, 'HIZ TESTİ'));
+  panel.append(el('span', { class: 'ds-ribbon' }, control ? 'KONTROL TESTİ' : 'HIZ TESTİ'));
   const rows: Record<string, HTMLElement> = {};
   const table = el('table', { class: 'ds-table hiz-tablo' });
   const body = el('tbody');
@@ -59,8 +59,9 @@ function buildPanel(ui: HTMLElement): Panel {
     ['fps', 'Kare hızı (ekran)'],
     ['sim', 'Simülasyon (adım/sn)'],
     ['dusen', 'Düşen kare'],
-    ['adim', `En uzun adım (sınır ${STEP_LIMIT_MS} ms)`],
+    ['adim', `Adım %99,9 / en uzun (sınır ${STEP_LIMIT_MS} ms)`],
     ['geri', `En uzun 8 kare geri sarma (sınır ${ROLLBACK8_LIMIT_MS} ms)`],
+    ['is', 'Kare başına en uzun iş'],
   ] as const) {
     const tr = el('tr');
     const value = el('td', { class: 'num', 'data-testid': `hiz-${key}` }, '—');
@@ -98,18 +99,19 @@ function buildPanel(ui: HTMLElement): Panel {
     stage,
     version,
     start,
-    update(sum, target, running) {
+    update(sum, target, running, countdown) {
       const set = (k: string, v: string): void => {
         const node = rows[k];
         if (node) node.textContent = v;
       };
       set('sure', `${mmss(Math.min(sum.seconds, target))} / ${mmss(target)}`);
       set('fps', sum.fps.toFixed(1));
-      set('sim', sum.simPerSecond.toFixed(1));
+      set('sim', control ? '—' : sum.simPerSecond.toFixed(1));
       set('dusen', String(sum.dropped));
-      set('adim', `${sum.maxStepMs.toFixed(2)} ms`);
-      set('geri', `${sum.maxRollback8Ms.toFixed(2)} ms`);
-      const text = running ? 'SÜRÜYOR' : sum.seconds === 0 ? 'HAZIR' : sum.verdict;
+      set('adim', control ? '—' : `${sum.p999StepMs.toFixed(2)} / ${sum.maxStepMs.toFixed(2)} ms`);
+      set('geri', control ? '—' : `${sum.maxRollback8Ms.toFixed(2)} ms`);
+      set('is', `${sum.maxWorkMs.toFixed(2)} ms`);
+      const text = running ? 'SÜRÜYOR' : sum.seconds === 0 ? (countdown ?? 'HAZIR') : sum.verdict;
       verdict.textContent = text;
       verdict.dataset.sonuc = text;
       start.hidden = running;
@@ -117,7 +119,9 @@ function buildPanel(ui: HTMLElement): Panel {
   };
 }
 
-/** Aşama 1a teknik kanıt: iki kutu dövüşçü, 60 Hz sabit adım, ölçüm paneli. Oyuncu 1 klavye/kol, Oyuncu 2 bilgisayar. */
+/** Aşama 1a teknik kanıt: iki kutu dövüşçü, 60 Hz sabit adım, ölçüm paneli. Oyuncu 1 klavye/kol, Oyuncu 2 bilgisayar.
+ *  ?kontrol: aynı kare döngüsü ve ölçüm, ama oyun çalışmaz (tarayıcının ve bilgisayarın kendi kare düşmesi).
+ *  ?basla=N: N saniye geri sayımdan sonra kendiliğinden başlar (pencereyi öne almak için zaman). */
 export function startSpeedTest(canvas: HTMLCanvasElement, ui: HTMLElement): void {
   const params = new URLSearchParams(location.search);
   const target = Math.min(3600, Math.max(5, Number(params.get('sure')) || 600));
@@ -130,13 +134,15 @@ export function startSpeedTest(canvas: HTMLCanvasElement, ui: HTMLElement): void
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Tuval çizim bağlamı alınamadı');
 
-  const panel = buildPanel(ui);
+  const control = params.has('kontrol');
+  const panel = buildPanel(ui, control);
   keepFitted(canvas, ui, panel.stage);
   void showVersion(panel.version);
   const palette = readPalette();
   const input = new FightInput(window);
 
-  let metrics = new Metrics(target);
+  const newMetrics = (): Metrics => new Metrics(target, { framesOnly: control });
+  let metrics = newMetrics();
   let running = false;
   let state: SimState = initialState(1);
   let cpu = new CpuInput(1);
@@ -147,7 +153,7 @@ export function startSpeedTest(canvas: HTMLCanvasElement, ui: HTMLElement): void
 
   const begin = (): void => {
     if (running) return;
-    metrics = new Metrics(target);
+    metrics = newMetrics();
     state = initialState(1);
     cpu = new CpuInput(1);
     history = [];
@@ -164,6 +170,28 @@ export function startSpeedTest(canvas: HTMLCanvasElement, ui: HTMLElement): void
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && running) metrics.hidden();
   });
+  // Teşhis: ölçüm sırasında pencere boyutu değişti mi (tam ekran, bilgi çubuğu)? Panelde değil, inceleme için.
+  let resizes = 0;
+  window.addEventListener('resize', () => {
+    if (running) resizes += 1;
+  });
+  (window as unknown as { __hiz?: () => unknown }).__hiz = () => ({ ...metrics.summary(), resizes, control });
+
+  const autoStart = params.get('basla');
+  if (autoStart !== null) {
+    let left = Math.min(600, Math.max(0, Math.floor(Number(autoStart)) || 0));
+    const countdown = (): void => {
+      if (running) return;
+      if (left <= 0) {
+        begin();
+        return;
+      }
+      panel.update(metrics.summary(), target, false, `BAŞLIYOR ${mmss(left)}`);
+      left -= 1;
+      setTimeout(countdown, 1000);
+    };
+    countdown();
+  }
 
   const simulate = (): void => {
     const inputs: [number, number] = [input.read(), cpu.next()];
@@ -185,13 +213,14 @@ export function startSpeedTest(canvas: HTMLCanvasElement, ui: HTMLElement): void
   };
 
   const tick = (t: number): void => {
+    const w0 = performance.now();
     if (running) {
       if (last !== 0) {
         const dt = t - last;
         metrics.frame(dt);
         acc += Math.min(dt, 250);
         while (acc >= FRAME_MS) {
-          simulate();
+          if (!control) simulate();
           acc -= FRAME_MS;
         }
       }
@@ -201,9 +230,10 @@ export function startSpeedTest(canvas: HTMLCanvasElement, ui: HTMLElement): void
         running = false;
         if (mismatch) throw new Error('Geri sarma sonucu farklı çıktı: determinizm hatası');
       }
-      if (state.frame % 15 === 0 || !running) panel.update(sum, target, running);
+      if (metrics.frameCount % 15 === 0 || !running) panel.update(sum, target, running);
     }
-    render(ctx, state, palette);
+    if (!control) render(ctx, state, palette);
+    if (running) metrics.work(performance.now() - w0);
     requestAnimationFrame(tick);
   };
   panel.update(metrics.summary(), target, false);

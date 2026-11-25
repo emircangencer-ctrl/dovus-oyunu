@@ -10,7 +10,27 @@ test('hız testi: başlatılır, süresi dolunca sonuç verir; simülasyon saniy
   const sim = Number(await page.getByTestId('hiz-sim').textContent());
   expect(sim).toBeGreaterThan(55);
   expect(sim).toBeLessThan(65);
+  await expect(page.getByTestId('hiz-adim')).toHaveText(/^\d+\.\d\d \/ \d+\.\d\d ms$/);
+  await expect(page.getByTestId('hiz-is')).toHaveText(/^\d+\.\d\d ms$/);
   await expect(page.getByTestId('surum')).toHaveText(/^Sürüm: /);
+});
+
+test('basla=N: tuşa basmadan geri sayımla kendiliğinden başlar', async ({ page }) => {
+  await page.goto('/hiz-testi?sure=5&basla=1');
+  const sonuc = page.getByTestId('hiz-sonuc');
+  await expect(sonuc).toHaveText('SÜRÜYOR', { timeout: 5_000 });
+  await expect(sonuc).toHaveText(/^(GEÇTİ|KALDI)$/, { timeout: 15_000 });
+});
+
+test('kontrol testi: oyun çalışmadan yalnız ekran kareleri ölçülür', async ({ page }) => {
+  await page.goto('/hiz-testi?kontrol&sure=5&basla=1');
+  await expect(page.locator('.ds-ribbon')).toHaveText('KONTROL TESTİ');
+  const sonuc = page.getByTestId('hiz-sonuc');
+  await expect(sonuc).toHaveText(/^(GEÇTİ|KALDI)$/, { timeout: 15_000 });
+  await expect(page.getByTestId('hiz-sim')).toHaveText('—');
+  await expect(page.getByTestId('hiz-adim')).toHaveText('—');
+  const fps = Number(await page.getByTestId('hiz-fps').textContent());
+  expect(fps).toBeGreaterThan(30);
 });
 
 test('iki pencere 150 ms yapay gecikmeyle: durum özetleri hep aynı', async ({ context }) => {

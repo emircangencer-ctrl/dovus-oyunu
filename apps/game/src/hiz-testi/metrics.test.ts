@@ -78,3 +78,75 @@ test('ısınma: ilk 120 karedeki adım ve geri sarma süreleri sayılmaz (JIT de
   expect(m.summary().maxStepMs).toBe(0.2);
   expect(m.summary().maxRollback8Ms).toBe(0.5);
 });
+
+describe('Emir bilgisayarı ölçümü sonrası teşhis (adım dağılımı, düşen kare kaydı, kare başına iş)', () => {
+  const warm = (m: Metrics): void => feed(m, 1000 / 60, 120);
+
+  test('adım süreleri dağılımı: ortanca, %99,9 ve 1 ms üstü sayısı', () => {
+    const m = new Metrics(10);
+    warm(m);
+    for (let i = 0; i < 998; i++) m.stepTime(0.1);
+    m.stepTime(1.0);
+    m.stepTime(0.30000000000000004);
+    const s = m.summary();
+    expect(s.p50StepMs).toBeCloseTo(0.1, 5);
+    expect(s.p999StepMs).toBeCloseTo(0.3, 5);
+    expect(s.stepsOver1Ms).toBe(1);
+    expect(s.maxStepMs).toBe(1.0);
+  });
+
+  test('100 µs saat adımlarında (0,09999…) yuvarlama hatası alt kovaya düşürmez', () => {
+    const m = new Metrics(10);
+    warm(m);
+    m.stepTime(0.29999999999999993);
+    expect(m.summary().p50StepMs).toBeCloseTo(0.3, 5);
+  });
+
+  test('tek bir 1 ms adım (işletim sistemi kesintisi) %99,9 şartını bozmaz: GEÇTİ', () => {
+    const m = new Metrics(10);
+    feed(m, 1000 / 60, 600);
+    for (let i = 0; i < 600; i++) m.simStep();
+    for (let i = 0; i < 36_000; i++) m.stepTime(0.1);
+    m.stepTime(1.0);
+    m.rollbackTime(0.5, 8);
+    expect(m.summary().verdict).toBe('GEÇTİ');
+  });
+
+  test('adımların binde birinden fazlası 1 ms ve üstüyse KALDI', () => {
+    const m = new Metrics(10);
+    feed(m, 1000 / 60, 600);
+    for (let i = 0; i < 600; i++) m.simStep();
+    for (let i = 0; i < 997; i++) m.stepTime(0.1);
+    for (let i = 0; i < 3; i++) m.stepTime(1.2);
+    expect(m.summary().verdict).toBe('KALDI');
+  });
+
+  test('düşen kareler zamanı ve süresiyle kaydedilir (en çok 100)', () => {
+    const m = new Metrics(100);
+    warm(m);
+    m.frame(34);
+    const s = m.summary();
+    expect(s.drops).toEqual([{ at: Number(((120 * 1000) / 60 / 1000 + 0.034).toFixed(2)), ms: 34 }]);
+    for (let i = 0; i < 150; i++) m.frame(40);
+    expect(m.summary().drops).toHaveLength(100);
+    expect(m.summary().dropped).toBe(151);
+  });
+
+  test('kare başına iş süresinin en uzunu ısınmadan sonra tutulur', () => {
+    const m = new Metrics(10);
+    m.work(12);
+    warm(m);
+    m.work(1.5);
+    m.work(0.7);
+    expect(m.summary().maxWorkMs).toBe(1.5);
+  });
+});
+
+test('kontrol ölçümü (yalnız kareler): simülasyon olmadan sonuç yalnız düşen kareye bakar', () => {
+  const m = new Metrics(10, { framesOnly: true });
+  feed(m, 1000 / 60, 600);
+  expect(m.summary().verdict).toBe('GEÇTİ');
+  m.frame(40);
+  expect(m.summary().verdict).toBe('KALDI');
+  expect(m.frameCount).toBe(601);
+});
