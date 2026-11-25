@@ -470,7 +470,7 @@ button.ds-menu-item, button.row {{ width: 100%; text-align: left; }}
 if __name__ == '__main__':
     kit, F, I, bi, mask = css()
     out = ROOT / 'apps/game/src/ui/kit.css'
-    out.write_text(kit)
+    out.write_text('/* Token değişkenleri (tokens.json) */\n' + tokens_css() + kit)
     print('yazıldı:', out.relative_to(ROOT), len(kit))
     if '--design' in sys.argv:
         d = Path(sys.argv[sys.argv.index('--design') + 1])
