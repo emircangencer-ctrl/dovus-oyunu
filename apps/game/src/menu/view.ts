@@ -121,7 +121,11 @@ export function createMenuView(host: HTMLElement, onAction: (a: MenuAction) => v
         clearTimeout(toastTimer);
         toastTimer = setTimeout(() => toast.classList.remove('is-on'), TOAST_MS);
       }
-      if (!s.toast) toast.classList.remove('is-on');
+      if (!s.toast) {
+        // Başlığa dönünce bildirim kimlikleri baştan sayar; gösterilen kimlik de sıfırlanır ki ilk bildirim kaçmasın.
+        toast.classList.remove('is-on');
+        shownToast = 0;
+      }
     },
   };
 }

@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 import { expect, test } from '@playwright/test';
 
 test('açılışta başlık ekranı ve logo görünür', async ({ page }) => {
@@ -52,4 +53,44 @@ test('1366×768 pencerede sahne pencerenin içinde ve ortalı', async ({ page })
   expect(hints).not.toBeNull();
   // Son seçenek alt ipucu şeridinin altında kalmamalı
   if (last && hints) expect(last.y + last.height).toBeLessThanOrEqual(hints.y);
+});
+
+test('başlığa dönüp yeniden girince YAKINDA bildirimi yine ilk basışta çıkar', async ({ page }) => {
+  await page.goto('/');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('bildirim')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('ana-menu')).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('bildirim')).toBeVisible();
+  await expect(page.getByTestId('bildirim')).toHaveText('ARCADE · YAKINDA');
+});
+
+test('Tab odağı oyundan dışarı (adres çubuğuna) kaçırmaz', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') (window as unknown as { tabEngellendi: boolean }).tabEngellendi = e.defaultPrevented;
+    });
+  });
+  await page.keyboard.press('Tab');
+  expect(await page.evaluate(() => (window as unknown as { tabEngellendi?: boolean }).tabEngellendi)).toBe(true);
+});
+
+test('başlıktan menüye geçerken oyun tam ekrana geçer (bir kez)', async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { tamEkran: number };
+    w.tamEkran = 0;
+    Element.prototype.requestFullscreen = function () {
+      w.tamEkran += 1;
+      return Promise.resolve();
+    };
+  });
+  await page.goto('/');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => (window as unknown as { tamEkran: number }).tamEkran)).toBe(1);
 });

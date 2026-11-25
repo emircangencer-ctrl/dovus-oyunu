@@ -18,8 +18,17 @@ view.render(state);
 function dispatch(action: MenuAction): void {
   const next = step(state, action);
   if (next === state) return;
+  if (state.screen === 'baslik' && next.screen === 'menu') enterFullscreen();
   state = next;
   view.render(state);
+}
+
+/** Dizüstü ekranlarda pencere içinde oyun 1 katta küçük kalır; tam ekranda 2 kata çıkar. Kullanıcı hareketi içinde çağrılır. */
+function enterFullscreen(): void {
+  if (document.fullscreenElement || !document.documentElement.requestFullscreen) return;
+  document.documentElement.requestFullscreen().catch(() => {
+    // İzin verilmezse (örneğin bir çerçeve içinde) oyun pencerede devam eder.
+  });
 }
 
 clearCanvas(canvas);
@@ -29,6 +38,11 @@ void showVersion(view.version);
 
 window.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
+  // Tab odağı tarayıcının adres çubuğuna kaçırmasın (WASD ile oynarken Q'nun yanında).
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    return;
+  }
   const action = keyToAction(e.key);
   if (!action) return;
   e.preventDefault();
