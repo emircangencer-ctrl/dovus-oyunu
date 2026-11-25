@@ -5,7 +5,7 @@ Kullanım:
 
 - Menü arka planı (Canva MAHb3WLMCug, 2720×1536): 1920 genişliğe küçültülür, ortadan 1080 yüksekliğe kırpılır.
 - Logo (Canva MAHb3eS2Td4): logonun bulunduğu bölge kesilir, altındaki boş kurdele atılır, zemin GrabCut ile ayrılır.
-Çıktılar apps/game/public/art/ altına WebP olarak yazılır. Gereken paketler: Pillow, opencv-python-headless, numpy.
+Çıktılar apps/game/public/art/ altına WebP, marka dosyaları apps/game/public/brand/ altına PNG olarak yazılır. Gereken paketler: Pillow, opencv-python-headless, numpy.
 """
 import sys
 from pathlib import Path
@@ -15,11 +15,14 @@ import numpy as np
 from PIL import Image
 
 OUT = Path(__file__).resolve().parents[2] / 'apps' / 'game' / 'public' / 'art'
+BRAND = OUT.parent / 'brand'
 
 # Logonun 2720×1536 kaynak görseldeki yeri ve kurdelenin başladığı satır (bu kutuya göre).
 LOGO_BOX = (560, 0, 2290, 640)
 RIBBON_TOP = 575
 LOGO_WIDTH = 1200
+# Logodaki "KO" harflerinin yatay merkezi (genişliğe oranla); simgeler buradan kesilir.
+KO_CENTER = 0.775
 
 
 def background(src: Path) -> None:
@@ -49,6 +52,22 @@ def logo(src: Path) -> None:
     out = out.crop(out.getbbox())
     out = out.resize((LOGO_WIDTH, round(out.height * LOGO_WIDTH / out.width)), Image.LANCZOS)
     out.save(OUT / 'logo.webp', quality=92, method=6)
+    brand(out)
+
+
+def brand(logo_img: Image.Image) -> None:
+    """Marka dosyaları: başlık ekranı için 1080 ve 540 genişlikte logo, sekme ve ana ekran simgesi (logonun "KO" kısmı)."""
+    d = BRAND
+    d.mkdir(parents=True, exist_ok=True)
+    for width, name in ((1080, 'logo@2x.png'), (540, 'logo-960.png')):
+        logo_img.resize((width, round(logo_img.height * width / logo_img.width)), Image.LANCZOS).save(d / name, optimize=True)
+    w, h = logo_img.size
+    side = round(h * 0.92)
+    left = round(w * KO_CENTER) - side // 2
+    top = (h - side) // 2
+    ko = logo_img.crop((left, top, left + side, top + side))
+    for size, name in ((64, 'favicon.png'), (180, 'apple-touch-icon.png')):
+        ko.resize((size, size), Image.LANCZOS).save(d / name, optimize=True)
 
 
 if __name__ == '__main__':

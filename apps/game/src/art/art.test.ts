@@ -41,3 +41,29 @@ describe('Canva sanat dosyaları', () => {
     expect(info.width).toBeGreaterThan(info.height);
   });
 });
+
+/** PNG başlığından genişlik/yükseklik ve saydamlık (renk türü 6 = RGBA). */
+function readPng(name: string): WebpInfo {
+  const b = readFileSync(fileURLToPath(new URL(`../../public/brand/${name}`, import.meta.url)));
+  expect(b.toString('ascii', 1, 4)).toBe('PNG');
+  return { width: b.readUInt32BE(16), height: b.readUInt32BE(20), alpha: b.readUInt8(25) === 6 };
+}
+
+describe('marka dosyaları', () => {
+  test.each([
+    ['logo@2x.png', 1080],
+    ['logo-960.png', 540],
+  ])('%s saydam ve %i px genişlikte', (name, width) => {
+    const info = readPng(name);
+    expect(info.width).toBe(width);
+    expect(info.alpha).toBe(true);
+  });
+
+  test.each([
+    ['favicon.png', 64],
+    ['apple-touch-icon.png', 180],
+  ])('%s kare ve %i px', (name, size) => {
+    const info = readPng(name);
+    expect([info.width, info.height]).toEqual([size, size]);
+  });
+});
