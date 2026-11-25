@@ -2,6 +2,7 @@ import { hashState, initialState, Rng, type SimState, step } from '@dovus/engine
 import { showVersion } from '../menu/start';
 import { keepFitted } from '../viewport/fit';
 import { FightInput } from './input';
+import { startLinkTest } from './link-page';
 import { Metrics, ROLLBACK8_LIMIT_MS, STEP_LIMIT_MS, type Summary } from './metrics';
 import { readPalette, render } from './render';
 
@@ -120,6 +121,12 @@ function buildPanel(ui: HTMLElement): Panel {
 export function startSpeedTest(canvas: HTMLCanvasElement, ui: HTMLElement): void {
   const params = new URLSearchParams(location.search);
   const target = Math.min(3600, Math.max(5, Number(params.get('sure')) || 600));
+  if (params.has('gecikme')) {
+    const delayMs = Math.min(500, Math.max(0, Number(params.get('gecikme')) || 150));
+    const cpu = new CpuInput(Math.floor(Math.random() * 2 ** 31) + 1);
+    startLinkTest(canvas, ui, { delayMs, seconds: target, input: new FightInput(window), cpu: () => cpu.next() });
+    return;
+  }
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Tuval çizim bağlamı alınamadı');
 
