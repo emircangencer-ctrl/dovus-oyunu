@@ -91,7 +91,7 @@ test('başlıktan menüye geçerken oyun tam ekrana geçer (bir kez)', async ({ 
   await page.addInitScript(() => {
     const w = window as unknown as { tamEkran: number };
     w.tamEkran = 0;
-    Element.prototype.requestFullscreen = function () {
+    Element.prototype.requestFullscreen = () => {
       w.tamEkran += 1;
       return Promise.resolve();
     };
