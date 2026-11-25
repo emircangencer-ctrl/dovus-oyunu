@@ -120,3 +120,11 @@ test('tam ekrana geçince Esc tuşu oyuna ayrılır (geri tuşu olarak çalışs
   await page.keyboard.press('Enter');
   await expect.poll(() => page.evaluate(() => (window as unknown as { kilit?: string[] }).kilit)).toEqual(['Escape']);
 });
+
+test('ana menüden hız testine gidilir', async ({ page }) => {
+  await page.goto('/');
+  await page.keyboard.press('Enter');
+  await page.getByRole('link', { name: 'HIZ TESTİ' }).click();
+  await expect(page).toHaveURL(/\/hiz-testi$/);
+  await expect(page.getByTestId('hiz-sonuc')).toHaveText('HAZIR');
+});

@@ -73,7 +73,9 @@ export function createMenuView(host: HTMLElement, onAction: (a: MenuAction) => v
   });
   const toastText = el('span', { class: 'ds-toast__kind' });
   toast.append(el('span', { class: 'ds-toast__dot' }), toastText);
-  menu.append(el('img', { class: 'menu__logo', src: '/art/logo.webp', alt: 'SysKO' }), nav, info, toast);
+  // Aşama 1 teknik kanıtı: Emir'in bilgisayarında ölçülen hız testi.
+  const speedTest = el('a', { class: 'ds-tag menu__hiz', href: '/hiz-testi' }, 'HIZ TESTİ');
+  menu.append(el('img', { class: 'menu__logo', src: '/art/logo.webp', alt: 'SysKO' }), nav, info, toast, speedTest);
 
   // Alt ipucu şeridi
   const hints = el('div', { class: 'ds-hints alt-serit' });

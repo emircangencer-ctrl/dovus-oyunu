@@ -172,6 +172,14 @@ body {
   visibility: visible;
 }
 
+.menu__hiz {
+  position: absolute;
+  right: 64px;
+  top: 900px;
+  padding: 4px 16px;
+  text-decoration: none;
+}
+
 /* ---------- Alt ipucu şeridi ---------- */
 .alt-serit {
   position: absolute;
