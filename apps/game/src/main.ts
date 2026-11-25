@@ -26,9 +26,19 @@ function dispatch(action: MenuAction): void {
 /** Dizüstü ekranlarda pencere içinde oyun 1 katta küçük kalır; tam ekranda 2 kata çıkar. Kullanıcı hareketi içinde çağrılır. */
 function enterFullscreen(): void {
   if (document.fullscreenElement || !document.documentElement.requestFullscreen) return;
-  document.documentElement.requestFullscreen().catch(() => {
-    // İzin verilmezse (örneğin bir çerçeve içinde) oyun pencerede devam eder.
-  });
+  document.documentElement
+    .requestFullscreen()
+    .then(lockEscape)
+    .catch(() => {
+      // İzin verilmezse (örneğin bir çerçeve içinde) oyun pencerede devam eder.
+    });
+}
+
+/** Tam ekranda Esc tarayıcıya gitmesin, oyunda "geri" olsun (Chrome/Edge; çıkmak için Esc basılı tutulur). Firefox'ta
+ *  bu destek yok: orada ilk Esc tam ekrandan çıkar, geri için Backspace de çalışır. */
+function lockEscape(): void {
+  const kb = (navigator as Navigator & { keyboard?: { lock?: (codes: string[]) => Promise<void> } }).keyboard;
+  kb?.lock?.(['Escape']).catch(() => {});
 }
 
 clearCanvas(canvas);

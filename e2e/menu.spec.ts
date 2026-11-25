@@ -1,6 +1,14 @@
 /// <reference lib="dom" />
 import { expect, test } from '@playwright/test';
 
+// Gezinme testleri tam ekran davranışından bağımsız olsun: gerçek tam ekranda tarayıcı Esc'yi kendisi kullanabilir
+// (Firefox). Tam ekranın kendisi aşağıdaki iki testte ayrıca denetlenir.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    Element.prototype.requestFullscreen = () => Promise.resolve();
+  });
+});
+
 test('açılışta başlık ekranı ve logo görünür', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('baslik')).toBeVisible();
@@ -93,4 +101,22 @@ test('başlıktan menüye geçerken oyun tam ekrana geçer (bir kez)', async ({ 
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   expect(await page.evaluate(() => (window as unknown as { tamEkran: number }).tamEkran)).toBe(1);
+});
+
+test('tam ekrana geçince Esc tuşu oyuna ayrılır (geri tuşu olarak çalışsın diye)', async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { kilit?: string[] };
+    Object.defineProperty(navigator, 'keyboard', {
+      configurable: true,
+      value: {
+        lock: (codes: string[]) => {
+          w.kilit = codes;
+          return Promise.resolve();
+        },
+      },
+    });
+  });
+  await page.goto('/');
+  await page.keyboard.press('Enter');
+  await expect.poll(() => page.evaluate(() => (window as unknown as { kilit?: string[] }).kilit)).toEqual(['Escape']);
 });
