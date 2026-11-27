@@ -18,7 +18,6 @@ import { BASE_HEIGHT, BASE_WIDTH } from '../viewport/scale';
 
 export interface FightPalette {
   readonly sky: string;
-  readonly skyHigh: string;
   readonly far: string;
   readonly near: string;
   readonly floor: string;
@@ -40,7 +39,6 @@ export function readFightPalette(): FightPalette {
   const v = (name: string): string => css.getPropertyValue(`--${name}`).trim() || '#ff00ff';
   return {
     sky: v('sky-900'),
-    skyHigh: v('sky-950'),
     far: v('sky-700'),
     near: v('navy-700'),
     floor: v('navy-900'),
@@ -60,10 +58,9 @@ export function readFightPalette(): FightPalette {
 const SPARK_FRAMES = 8;
 
 function drawBackground(ctx: CanvasRenderingContext2D, cam: number, pal: FightPalette): void {
-  ctx.fillStyle = pal.skyHigh;
-  ctx.fillRect(0, 0, BASE_WIDTH, 160);
+  // Gökyüzü pencere kenarındaki boşluktan (ink-950) ayrışsın diye tamamı gece moru.
   ctx.fillStyle = pal.sky;
-  ctx.fillRect(0, 160, BASE_WIDTH, FLOOR_Y - 160);
+  ctx.fillRect(0, 0, BASE_WIDTH, FLOOR_Y);
   // Uzak kuleler: kameranın yarı hızında kayar (derinlik hissi).
   ctx.fillStyle = pal.far;
   const far = Math.trunc(cam / 2);
