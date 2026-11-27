@@ -17,7 +17,9 @@ test('açılışta başlık ekranı ve logo görünür', async ({ page }) => {
   await expect(page.getByTestId('ana-menu')).toBeHidden();
 });
 
-test('Enter ana menüyü açar; oklarla gezilir, seçince YAKINDA çıkar, Esc başlığa döner', async ({ page }) => {
+test('Enter ana menüyü açar; oklarla gezilir, hazır olmayan seçenek YAKINDA der, Esc başlığa döner', async ({
+  page,
+}) => {
   await page.goto('/');
   await page.keyboard.press('Enter');
   const menu = page.getByTestId('ana-menu');
@@ -30,9 +32,12 @@ test('Enter ana menüyü açar; oklarla gezilir, seçince YAKINDA çıkar, Esc b
   await expect(items.nth(1)).toHaveAttribute('aria-current', 'true');
   await expect(page.getByTestId('bilgi-baslik')).toHaveText('VERSUS');
 
+  // VERSUS artık açık (dövüş testleri ayrı); hazır olmayan bir sonraki seçenek YAKINDA der.
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByTestId('bilgi-baslik')).toHaveText('ÇEVRİMİÇİ OYNA');
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('bildirim')).toBeVisible();
-  await expect(page.getByTestId('bildirim')).toHaveText('VERSUS · YAKINDA');
+  await expect(page.getByTestId('bildirim')).toHaveText('ÇEVRİMİÇİ OYNA · YAKINDA');
   await expect(menu).toBeVisible();
 
   await page.keyboard.press('Escape');

@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vitest';
-import { INITIAL, MENU_ITEMS, type MenuState, step } from './menu-state';
+import { INITIAL, MENU_ITEMS, type MenuState, menuAt, step } from './menu-state';
 
-const menu = (focus = 0): MenuState => ({ screen: 'menu', focus, toast: null });
+const menu = (focus = 0): MenuState => ({ screen: 'menu', focus, toast: null, launch: null });
 
 describe('başlık ekranı', () => {
   test('oyun başlık ekranıyla açılır', () => {
-    expect(INITIAL).toEqual({ screen: 'baslik', focus: 0, toast: null });
+    expect(INITIAL).toEqual({ screen: 'baslik', focus: 0, toast: null, launch: null });
   });
 
   test.each(['herhangi', 'sec', 'yukari', 'asagi'] as const)('"%s" ana menüyü açar', (action) => {
@@ -52,9 +52,22 @@ describe('ana menü', () => {
 
   test('üzerine gelmek odağı taşır, tıklamak hem odaklar hem seçer', () => {
     expect(step(menu(0), { odak: 5 })).toEqual(menu(5));
-    const clicked = step(menu(0), { tikla: 4 });
-    expect(clicked.focus).toBe(4);
-    expect(clicked.toast?.text).toBe('ANTRENMAN · YAKINDA');
+    const clicked = step(menu(0), { tikla: 3 });
+    expect(clicked.focus).toBe(3);
+    expect(clicked.toast?.text).toBe('TURNUVA · YAKINDA');
+  });
+
+  test('VERSUS ve ANTRENMAN hazır: seçilince açılır (her seçişte yeni kimlik), bildirim çıkmaz', () => {
+    const v = step(menu(1), 'sec');
+    expect(v.launch).toEqual({ id: 'versus', n: 1 });
+    expect(v.toast).toBeNull();
+    expect(step(v, 'sec').launch).toEqual({ id: 'versus', n: 2 });
+    expect(step(menu(0), { tikla: 4 }).launch).toEqual({ id: 'antrenman', n: 1 });
+    expect(MENU_ITEMS.filter((i) => i.ready).map((i) => i.id)).toEqual(['versus', 'antrenman']);
+  });
+
+  test('dövüşten dönünce menü aynı seçenekte açılır', () => {
+    expect(menuAt('antrenman')).toEqual(menu(4));
   });
 
   test('menü dışındaki bir sıraya odak verilemez', () => {
@@ -64,7 +77,7 @@ describe('ana menü', () => {
 
   test('geri başlık ekranına döner ve bildirimi kapatır', () => {
     const withToast = step(menu(2), 'sec');
-    expect(step(withToast, 'geri')).toEqual({ screen: 'baslik', focus: 2, toast: null });
+    expect(step(withToast, 'geri')).toEqual({ screen: 'baslik', focus: 2, toast: null, launch: null });
   });
 
   test('"herhangi" ana menüde bir şey yapmaz', () => {

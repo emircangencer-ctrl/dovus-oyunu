@@ -10,3 +10,4 @@ blob-report/
 *.generated.ts
 .superpowers/
 .DS_Store
+tmp-shot/

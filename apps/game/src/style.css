@@ -256,3 +256,308 @@ body {
   font: 400 37.333px / 1.25 var(--font-pixel);
   color: var(--text-secondary);
 }
+
+/* ---------- Dövüş ekranı (Versus, Antrenman): onaylı "Dövüş HUD", "Duraklatma", "Raunt sonu" tasarımları ---------- */
+
+.dovus [hidden] {
+  display: none;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud__portre {
+  position: absolute;
+  top: 48px;
+}
+
+.hud__portre--p1 {
+  left: 48px;
+}
+
+.hud__portre--p2 {
+  right: 48px;
+}
+
+.hud__cerceve {
+  width: 120px;
+  height: 120px;
+}
+
+.hud__portre--p2 .hud__cerceve {
+  transform: scaleX(-1);
+}
+
+/* Çizimli portreler 1e'de; şimdilik dövüşçünün renginde gövde silueti. */
+.hud__yuz {
+  display: block;
+  width: 56px;
+  height: 80px;
+  margin-bottom: 0;
+  box-shadow: inset 0 0 0 6px var(--ink-950);
+}
+
+.hud__yuz--p1 {
+  background: var(--ember-500);
+}
+
+.hud__yuz--p2 {
+  background: var(--volt-500);
+}
+
+.hud__can {
+  position: absolute;
+  top: 56px;
+  width: 648px;
+}
+
+.hud__can--p1 {
+  left: 184px;
+}
+
+.hud__can--p2 {
+  right: 184px;
+}
+
+.hud__satir {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  align-self: stretch;
+}
+
+.hud__satir--p2 {
+  flex-direction: row-reverse;
+}
+
+.hud__ad {
+  font: 400 74.667px / 1 var(--font-pixel);
+  padding: 0 20px 4px;
+}
+
+.hud__ad--p1 {
+  color: var(--ember-400);
+}
+
+.hud__ad--p2 {
+  color: var(--volt-400);
+}
+
+.hud__sure {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 44px;
+  display: flex;
+  justify-content: center;
+}
+
+.hud__sure .ds-timer {
+  min-width: 140px;
+}
+
+.hud__kombo {
+  position: absolute;
+  top: 330px;
+}
+
+.hud__kombo--p1 {
+  left: 72px;
+}
+
+.hud__kombo--p2 {
+  right: 72px;
+  align-items: flex-end;
+}
+
+.hud__kombo .ds-combo__damage {
+  align-self: flex-start;
+}
+
+.hud__kombo--p2 .ds-combo__damage {
+  align-self: flex-end;
+}
+
+.hud__guc {
+  position: absolute;
+  bottom: 56px;
+}
+
+.hud__guc--p1 {
+  left: 56px;
+}
+
+.hud__guc--p2 {
+  right: 56px;
+  flex-direction: row-reverse;
+}
+
+.hud__guc--p2 .ds-power__stocks {
+  flex-direction: row-reverse;
+}
+
+.hud__durdur {
+  position: absolute;
+  left: 50%;
+  bottom: 60px;
+  translate: -50% 0;
+  font: 400 37.333px / 1 var(--font-pixel);
+  color: var(--text-secondary);
+}
+
+.duyuru {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.duyuru__ana {
+  font: 400 186.667px / 1 var(--font-pixel);
+  color: var(--gold-300);
+  padding: 0 56px 16px;
+  text-shadow:
+    4px 0 0 var(--ink-950),
+    -4px 0 0 var(--ink-950),
+    0 4px 0 var(--ink-950),
+    0 -4px 0 var(--ink-950),
+    4px 4px 0 var(--ink-950),
+    -4px 4px 0 var(--ink-950),
+    4px -4px 0 var(--ink-950),
+    -4px -4px 0 var(--ink-950),
+    0 8px 0 var(--ink-950);
+}
+
+.duyuru__alt {
+  font: 400 74.667px / 1 var(--font-pixel);
+  color: var(--text-primary);
+  padding: 0 28px 4px;
+}
+
+.katil {
+  position: absolute;
+  left: 360px;
+  top: 220px;
+  width: 1200px;
+  padding: 56px 48px 40px;
+}
+
+.katil__koltuklar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+}
+
+.katil__koltuk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 28px 16px;
+  background: var(--navy-800);
+  box-shadow: inset 0 0 0 4px var(--navy-600);
+}
+
+.katil__oyuncu {
+  font: 400 74.667px / 1 var(--font-pixel);
+  padding: 0 24px 4px;
+}
+
+.katil__oyuncu--p1 {
+  color: var(--ember-400);
+}
+
+.katil__oyuncu--p2 {
+  color: var(--volt-400);
+}
+
+.katil__durum {
+  font: 400 74.667px / 1 var(--font-pixel);
+  color: var(--text-secondary);
+}
+
+.katil__durum.is-on {
+  color: var(--go-300);
+}
+
+.katil__yardim,
+.katil__tuslar {
+  margin: 32px 0 0;
+  font: 400 37.333px / 1.4 var(--font-pixel);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.katil__tuslar {
+  margin-top: 16px;
+  color: var(--text-muted);
+}
+
+.dovus__katman {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink-950) 82%, transparent);
+}
+
+.dovus__katman--son {
+  background: none;
+}
+
+.dovus__menu-panel {
+  position: absolute;
+  left: 620px;
+  top: 200px;
+  width: 680px;
+  padding: 40px 32px;
+}
+
+.dovus__katman--son .dovus__menu-panel {
+  top: 560px;
+  padding: 24px 32px;
+}
+
+.dovus__baslik {
+  margin: 0 0 8px;
+  text-align: center;
+  font: 400 112px / 1 var(--font-pixel);
+  color: var(--gold-300);
+  text-shadow: 0 4px 0 var(--ink-950);
+}
+
+.dovus__not {
+  margin: 0 0 24px;
+  text-align: center;
+  font: 400 37.333px / 1.3 var(--font-pixel);
+  color: var(--text-muted);
+}
+
+.dovus__not:empty {
+  display: none;
+}
+
+.dovus__menu {
+  min-width: 0;
+}
+
+.dovus__menu .ds-menu-item {
+  width: 100%;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dovus__menu .ds-menu-item:not(.is-focused) {
+  background: none;
+}
+
+.dovus.is-menu .hud__durdur {
+  display: none;
+}

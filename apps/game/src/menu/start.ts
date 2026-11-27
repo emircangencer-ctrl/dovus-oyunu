@@ -1,42 +1,52 @@
-import { keepFitted } from '../viewport/fit';
+import type { Screen, ScreenCtx } from '../screens/manager';
 import { BASE_HEIGHT, BASE_WIDTH } from '../viewport/scale';
 import { keyToAction, type PadMemory, padStep, readPads } from './input';
-import { INITIAL, type MenuAction, type MenuState, step } from './menu-state';
+import { INITIAL, type MenuAction, type MenuState, menuAt, step } from './menu-state';
 import { createMenuView } from './view';
 
-/** Başlık ekranı ve ana menü: durum makinesi, görünüm ve klavye/oyun kolu/fare girdisi. */
-export function startMenu(canvas: HTMLCanvasElement, ui: HTMLElement): void {
-  let state: MenuState = INITIAL;
-  const view = createMenuView(ui, dispatch);
+/** Başlık ekranı ve ana menü: durum makinesi, görünüm ve klavye/oyun kolu/fare girdisi. `at` verilirse (bir bölümden
+ *  dönüş) başlık atlanır, menü o seçenekte açılır. */
+export function createMenuScreen(ctx: ScreenCtx, at?: string): Screen {
+  let state: MenuState = at ? menuAt(at) : INITIAL;
+  const off = new AbortController();
+  const view = createMenuView(ctx.ui, dispatch);
   view.render(state);
 
   function dispatch(action: MenuAction): void {
     const next = step(state, action);
     if (next === state) return;
     if (state.screen === 'baslik' && next.screen === 'menu') enterFullscreen();
+    const launched = next.launch && next.launch.n !== state.launch?.n ? next.launch.id : null;
     state = next;
     view.render(state);
+    if (launched === 'versus' || launched === 'antrenman') ctx.go({ name: launched });
   }
 
-  clearCanvas(canvas);
-  keepFitted(canvas, ui, view.stage);
+  clearCanvas(ctx.canvas);
   void showVersion(view.version);
 
-  window.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    // Tab odağı tarayıcının adres çubuğuna kaçırmasın (WASD ile oynarken Q'nun yanında).
-    if (e.key === 'Tab') {
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // Tab odağı tarayıcının adres çubuğuna kaçırmasın (WASD ile oynarken Q'nun yanında).
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        return;
+      }
+      const action = keyToAction(e.key);
+      if (!action) return;
       e.preventDefault();
-      return;
-    }
-    const action = keyToAction(e.key);
-    if (!action) return;
-    e.preventDefault();
-    if (e.repeat && (action === 'sec' || action === 'geri' || action === 'herhangi')) return;
-    dispatch(action);
-  });
+      if (e.repeat && (action === 'sec' || action === 'geri' || action === 'herhangi')) return;
+      dispatch(action);
+    },
+    { signal: off.signal },
+  );
 
-  let padMem: PadMemory | undefined;
+  // Dövüşten dönerken basılı kalan tuşlar menüde hemen bir şey seçmesin: ilk okuma yalnız hafızaya alınır.
+  let padMem: PadMemory | undefined = at
+    ? { prev: readPads(navigator.getGamepads?.() ?? []), next: { up: null, down: null } }
+    : undefined;
   let padLoop = 0;
   function pollPads(t: number): void {
     const r = padStep(padMem, readPads(navigator.getGamepads?.() ?? []), t);
@@ -44,9 +54,20 @@ export function startMenu(canvas: HTMLCanvasElement, ui: HTMLElement): void {
     for (const a of r.actions) dispatch(a);
     padLoop = requestAnimationFrame(pollPads);
   }
-  window.addEventListener('gamepadconnected', () => {
+  const startPads = (): void => {
     if (!padLoop) padLoop = requestAnimationFrame(pollPads);
-  });
+  };
+  window.addEventListener('gamepadconnected', startPads, { signal: off.signal });
+  if ((navigator.getGamepads?.() ?? []).some((p) => p)) startPads();
+
+  return {
+    stage: view.stage,
+    stop() {
+      off.abort();
+      cancelAnimationFrame(padLoop);
+      padLoop = 0;
+    },
+  };
 }
 
 /** Dizüstü ekranlarda pencere içinde oyun 1 katta küçük kalır; tam ekranda 2 kata çıkar. Kullanıcı hareketi içinde çağrılır. */
