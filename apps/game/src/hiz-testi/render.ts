@@ -1,5 +1,5 @@
 import { fxToPx } from '@dovus/engine';
-import { boxes, FLOOR_Y, type SimState } from '@dovus/fight';
+import { bodyBox, cameraX, def, FLOOR_Y, hitbox, type SimState, ST } from '@dovus/fight';
 import { BASE_HEIGHT, BASE_WIDTH } from '../viewport/scale';
 
 export interface Palette {
@@ -35,14 +35,17 @@ export function render(ctx: CanvasRenderingContext2D, s: SimState, pal: Palette)
   ctx.fillStyle = pal.ground;
   ctx.fillRect(0, FLOOR_Y, BASE_WIDTH, BASE_HEIGHT - FLOOR_Y);
 
+  const cam = cameraX(s);
   s.fighters.forEach((f, i) => {
     const color = i === 0 ? pal.p1 : pal.p2;
-    const { hurt, hit } = boxes(f);
-    const x = fxToPx(hurt.x);
-    const y = fxToPx(hurt.y);
-    const w = fxToPx(hurt.w);
-    const h = fxToPx(hurt.h);
-    ctx.globalAlpha = f.state === 5 ? 0.35 : f.hitstun > 0 ? 0.6 : 0.85;
+    const d = def(s, i === 0 ? 0 : 1);
+    const body = bodyBox(f, d);
+    const hit = hitbox(f, d);
+    const x = fxToPx(body.x) - cam;
+    const y = fxToPx(body.y);
+    const w = fxToPx(body.w);
+    const h = fxToPx(body.h);
+    ctx.globalAlpha = f.state === ST.KO ? 0.35 : f.stun > 0 ? 0.6 : 0.85;
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
     ctx.globalAlpha = 1;
@@ -50,7 +53,7 @@ export function render(ctx: CanvasRenderingContext2D, s: SimState, pal: Palette)
     ctx.fillRect(f.facing === 1 ? x + w : x - 6, y + 30, 6, 12);
     if (hit) {
       ctx.fillStyle = pal.hit;
-      ctx.fillRect(fxToPx(hit.x), fxToPx(hit.y), fxToPx(hit.w), fxToPx(hit.h));
+      ctx.fillRect(fxToPx(hit.x) - cam, fxToPx(hit.y), fxToPx(hit.w), fxToPx(hit.h));
     }
     // Can barı
     const barW = 380;
