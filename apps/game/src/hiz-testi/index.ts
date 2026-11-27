@@ -8,6 +8,8 @@ import { Metrics, ROLLBACK8_LIMIT_MS, STEP_LIMIT_MS, type Summary } from './metr
 import { readPalette, render } from './render';
 
 const FRAME_MS = 1000 / 60;
+/** Ölçüm 10 dakika boyunca gerçek dövüş yükünü görsün: antrenman kuralları (süre ve nakavt yok), girişsiz. */
+const SPEED_TEST_OPTIONS = { seed: 1, training: true, intro: false } as const;
 const ROLLBACK_FRAMES = 8;
 
 /** Bilgisayar rakip: tohumlu rastgele girdi, 1–10 karede bir değişir. */
@@ -145,7 +147,7 @@ export function startSpeedTest(canvas: HTMLCanvasElement, ui: HTMLElement): void
   const newMetrics = (): Metrics => new Metrics(target, { framesOnly: control });
   let metrics = newMetrics();
   let running = false;
-  let state: SimState = initialState(1);
+  let state: SimState = initialState(SPEED_TEST_OPTIONS);
   let cpu = new CpuInput(1);
   let history: Array<{ before: SimState; inputs: [number, number] }> = [];
   let acc = 0;
@@ -155,7 +157,7 @@ export function startSpeedTest(canvas: HTMLCanvasElement, ui: HTMLElement): void
   const begin = (): void => {
     if (running) return;
     metrics = newMetrics();
-    state = initialState(1);
+    state = initialState(SPEED_TEST_OPTIONS);
     cpu = new CpuInput(1);
     history = [];
     acc = 0;

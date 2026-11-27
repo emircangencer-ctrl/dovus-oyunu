@@ -10,6 +10,7 @@ import {
 } from './combat';
 import { BACK, BUTTONS, COMBO_STATES, DIRS, def, enter, FWD, isAir, NO_TAP, rel, TAP_WINDOW } from './common';
 import { ROSTER } from './kukla';
+import { roundFlow } from './round';
 import { FLOOR, MAX_SEPARATION, SCREEN_W, STAGE_LEFT, STAGE_RIGHT, STAGE_W, START_OFFSET } from './stage';
 import { type Fighter, type FighterDef, type FightOptions, type FightState, PHASE, ST } from './types';
 
@@ -174,6 +175,7 @@ function physics(f: Fighter, d: FighterDef): Fighter {
     if (y < FLOOR) return { ...f, x: f.x + f.vx, y, vy: f.vy + d.jump.gravity };
     const landed = { ...f, x: f.x + f.vx, y: FLOOR, vx: 0, vy: 0, stateFrame: 0, air: 0, attack: -1, contact: 0 };
     if (f.state === ST.HIT_AIR) {
+      if (f.hp === 0) return { ...landed, state: ST.KO, stun: 0, knock: 0 };
       if (f.knock) return { ...landed, state: ST.KNOCKDOWN, stun: KNOCKDOWN_FRAMES, knock: 0 };
       return { ...landed, state: ST.LANDING, stun: d.jump.land + AIR_RESET_LAND };
     }
@@ -283,15 +285,40 @@ function freeze(f: Fighter, input: number): Fighter {
   return { ...f, buffered: f.buffered | (input & ~f.prev & BUTTONS), prev: input };
 }
 
+/** Yeni raunt: dövüşçüler başa, süre dolu; galibiyetler ve raunt numarası korunur. */
+function nextRound(s: FightState): FightState {
+  return {
+    ...s,
+    fighters: startFighters(s.chars),
+    hitstop: 0,
+    sparkFrame: -1,
+    sparkKind: 0,
+    phase: PHASE.INTRO,
+    phaseFrame: 0,
+    round: s.round + 1,
+    timer: s.timerFrames,
+    roundResult: 0,
+    roundReason: 0,
+  };
+}
+
 export function step(s: FightState, inputs: readonly [number, number]): FightState {
-  const i0 = cleanInput(inputs[0]);
-  const i1 = cleanInput(inputs[1]);
+  // Girdi yalnız dövüş evresinde işlenir (girişte, raunt ve maç sonunda dövüşçüler kendi kendine kalır).
+  const live = s.phase === PHASE.FIGHT;
+  const i0 = live ? cleanInput(inputs[0]) : 0;
+  const i1 = live ? cleanInput(inputs[1]) : 0;
   const [pa, pb] = s.fighters;
-  if (s.hitstop > 0) {
-    return { ...s, frame: s.frame + 1, hitstop: s.hitstop - 1, fighters: [freeze(pa, i0), freeze(pb, i1)] };
-  }
   const d0 = def(s, 0);
   const d1 = def(s, 1);
+  if (s.hitstop > 0) {
+    const frozen = {
+      ...s,
+      frame: s.frame + 1,
+      hitstop: s.hitstop - 1,
+      fighters: [freeze(pa, i0), freeze(pb, i1)] as const,
+    };
+    return roundFlow(frozen, true, [d0, d1], nextRound);
+  }
 
   let a = physics(control(pa, d0, i0, s.frame), d0);
   let b = physics(control(pb, d1, i1, s.frame), d1);
@@ -304,7 +331,7 @@ export function step(s: FightState, inputs: readonly [number, number]): FightSta
     ? { sparkX: hit.spark.x, sparkY: hit.spark.y, sparkFrame: s.frame + 1, sparkKind: hit.spark.kind }
     : {};
 
-  return {
+  const next: FightState = {
     ...s,
     ...spark,
     frame: s.frame + 1,
@@ -314,6 +341,7 @@ export function step(s: FightState, inputs: readonly [number, number]): FightSta
       { ...b, prev: i1 },
     ],
   };
+  return roundFlow(next, false, [d0, d1], nextRound);
 }
 
 /** Kameranın sol kenarı, taban pikseli: iki dövüşçünün ortasını izler, sahneden taşmaz. */
