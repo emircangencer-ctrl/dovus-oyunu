@@ -1,4 +1,5 @@
-import { hashState, initialState, RollbackSession, randomInputs, type SimState, step } from '@dovus/engine';
+import { RollbackSession, randomInputs } from '@dovus/engine';
+import { fightGame, hashState, initialState, type SimState, step } from '@dovus/fight';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { DelayedLink, type LinkChannel, type LinkMessage, LinkPeer } from './link';
 
@@ -53,7 +54,7 @@ describe('iki taraf 150 ms gecikmeyle', () => {
     const frames = 3000;
     const ins = randomInputs(42, frames + 10);
     const peers = [0, 1].map((p) => {
-      const session = new RollbackSession({ seed: 42, local: p as 0 | 1, maxRollback: 8, delay: 2 });
+      const session = new RollbackSession(fightGame, { seed: 42, local: p as 0 | 1, maxRollback: 8, delay: 2 });
       const link = new DelayedLink(p === 0 ? ca : cb, 150, rnd);
       return new LinkPeer(session, link, (f) => (ins[f] as [number, number])[p] ?? 0);
     });

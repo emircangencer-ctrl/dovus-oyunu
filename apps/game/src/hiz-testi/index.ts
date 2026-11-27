@@ -1,4 +1,5 @@
-import { hashState, initialState, Rng, type SimState, step } from '@dovus/engine';
+import { Rng } from '@dovus/engine';
+import { hashState, initialState, type SimState, step } from '@dovus/fight';
 import { showVersion } from '../menu/start';
 import { keepFitted } from '../viewport/fit';
 import { FightInput } from './input';

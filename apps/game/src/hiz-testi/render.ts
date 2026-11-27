@@ -1,4 +1,5 @@
-import { boxes, FLOOR_Y, fxToPx, type SimState } from '@dovus/engine';
+import { fxToPx } from '@dovus/engine';
+import { boxes, FLOOR_Y, type SimState } from '@dovus/fight';
 import { BASE_HEIGHT, BASE_WIDTH } from '../viewport/scale';
 
 export interface Palette {

@@ -1,6 +1,4 @@
-import { toFx } from './fixed';
-import { hashInts } from './hash';
-import { cleanInput, HP, LEFT, LP, RIGHT, UP } from './input';
+import { cleanInput, type Game, HP, hashInts, LEFT, LP, RIGHT, toFx, UP } from '@dovus/engine';
 
 /** Kutu dövüşçülerle deterministik simülasyon (Aşama 1a teknik kanıt). Yalnız tam sayı; 60 Hz sabit adım.
  *  Sayılar başlangıç değerleridir; Aşama 1'de oyun hissine göre ayarlanır. */
@@ -234,3 +232,11 @@ export function hashState(s: SimState): number {
   }
   return hashInts(v);
 }
+
+/** Rollback oturumu ve rastgele geri sarma için dövüş oyunu arayüzü. */
+export const fightGame: Game<SimState> = {
+  init: initialState,
+  step,
+  hash: hashState,
+  frame: (s) => s.frame,
+};

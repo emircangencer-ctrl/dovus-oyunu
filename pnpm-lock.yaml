@@ -38,6 +38,9 @@ importers:
       '@dovus/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@dovus/fight':
+        specifier: workspace:*
+        version: link:../../packages/fight
     devDependencies:
       vite:
         specifier: 8.3.8
@@ -50,6 +53,12 @@ importers:
         version: 4.13.21
 
   packages/engine: {}
+
+  packages/fight:
+    dependencies:
+      '@dovus/engine':
+        specifier: workspace:*
+        version: link:../engine
 
 packages:
 

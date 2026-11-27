@@ -1,4 +1,5 @@
 import type { RollbackSession } from '@dovus/engine';
+import type { SimState } from '@dovus/fight';
 
 /** İki sekme arasındaki kanal (tarayıcıda BroadcastChannel). */
 export interface LinkChannel {
@@ -41,7 +42,7 @@ const HASH_EVERY = 60;
 /** Bir tarafın rollback oturumunu bağlantıya bağlar: girdisini (son 8 kareyle) gönderir, rakibinkini alır,
  *  60 karede bir kesinleşmiş durum özetini karşılaştırır. Girdi kaynağı, girdinin uygulanacağı kareyle çağrılır. */
 export class LinkPeer {
-  readonly session: RollbackSession;
+  readonly session: RollbackSession<SimState>;
   compared = 0;
   stalls = 0;
   maxRollback = 0;
@@ -53,7 +54,7 @@ export class LinkPeer {
   private readonly pendingRemote = new Map<number, number>();
   private nextHashFrame = HASH_EVERY - 1;
 
-  constructor(session: RollbackSession, link: DelayedLink, source: (frame: number) => number) {
+  constructor(session: RollbackSession<SimState>, link: DelayedLink, source: (frame: number) => number) {
     this.session = session;
     this.link = link;
     this.source = source;

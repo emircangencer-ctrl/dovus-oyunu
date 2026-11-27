@@ -1,6 +1,5 @@
+import { hashInts, randomInputs } from '@dovus/engine';
 import { expect, test } from 'vitest';
-import { hashInts } from './hash';
-import { randomInputs } from './random-inputs';
 import { hashState, initialState, step } from './sim';
 
 function playMatch(seed: number): number {

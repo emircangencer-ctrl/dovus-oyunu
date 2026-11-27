@@ -1,4 +1,5 @@
 import { RollbackSession } from '@dovus/engine';
+import { fightGame } from '@dovus/fight';
 import { showVersion } from '../menu/start';
 import { keepFitted } from '../viewport/fit';
 import type { FightInput } from './input';
@@ -101,7 +102,7 @@ export function startLinkTest(
       if (peerId === null) {
         peerId = m.id;
         const role: 0 | 1 = myId < peerId ? 0 : 1;
-        const session = new RollbackSession({ seed: 7, local: role, maxRollback: 8, delay: INPUT_DELAY });
+        const session = new RollbackSession(fightGame, { seed: 7, local: role, maxRollback: 8, delay: INPUT_DELAY });
         const link = new DelayedLink(adapter, opts.delayMs, Math.random);
         peer = new LinkPeer(session, link, () => {
           const k = opts.input.read();

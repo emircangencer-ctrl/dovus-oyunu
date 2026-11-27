@@ -1,6 +1,5 @@
+import { cleanInput, DOWN, FX, HP, LEFT, LP, RIGHT, toFx, UP } from '@dovus/engine';
 import { describe, expect, test } from 'vitest';
-import { FX, toFx } from './fixed';
-import { cleanInput, DOWN, HP, LEFT, LP, RIGHT, UP } from './input';
 import { boxes, FIGHTER_W, type Fighter, FLOOR_Y, initialState, type SimState, step } from './sim';
 
 const run = (s: SimState, frames: number, p1 = 0, p2 = 0): SimState => {
