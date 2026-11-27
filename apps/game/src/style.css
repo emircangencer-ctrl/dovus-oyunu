@@ -399,11 +399,16 @@ body {
   flex-direction: row-reverse;
 }
 
-.hud__durdur {
+.hud__durdur-satir {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 60px;
-  translate: -50% 0;
+  display: flex;
+  justify-content: center;
+}
+
+.hud__durdur {
   font: 400 37.333px / 1 var(--font-pixel);
   color: var(--text-secondary);
 }
@@ -558,6 +563,6 @@ body {
   background: none;
 }
 
-.dovus.is-menu .hud__durdur {
+.dovus.is-menu .hud__durdur-satir {
   display: none;
 }

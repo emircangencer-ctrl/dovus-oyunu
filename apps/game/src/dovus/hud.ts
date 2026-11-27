@@ -97,9 +97,11 @@ export function createHud(stage: HTMLElement): Hud {
   const timerBox = el('div', { class: 'hud__sure' });
   const timer = el('div', { class: 'ds-timer', 'data-testid': 'sure' }, '99');
   timerBox.append(timer);
+  const pauseRow = el('div', { class: 'hud__durdur-satir' });
   const pause = el('span', { class: 'ds-plate hud__durdur' });
   pause.innerHTML = '<span class="key">Esc</span><span class="key">Options</span>Duraklat';
-  root.append(timerBox, pause);
+  pauseRow.append(pause);
+  root.append(timerBox, pauseRow);
 
   const announce = el('div', { class: 'duyuru', 'data-testid': 'duyuru' });
   const big = el('span', { class: 'ds-plate ds-plate--big ds-plate--gems duyuru__ana', 'data-testid': 'duyuru-ana' });
