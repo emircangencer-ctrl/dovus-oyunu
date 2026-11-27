@@ -17,5 +17,5 @@ test('10.000 rastgele maç: her maç iki kez oynanınca aynı özeti verir; topl
     finals.push(a);
   }
   // Altın değer: motor davranışı bilerek değişirse güncellenir (spec Bölüm 11, altın tekrarlar).
-  expect(hashInts(finals)).toMatchInlineSnapshot(`2790050489`);
-}, 60_000);
+  expect(hashInts(finals)).toMatchInlineSnapshot(`2497544722`);
+}, 180_000);

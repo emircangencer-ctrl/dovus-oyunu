@@ -1,30 +1,29 @@
-import { cleanInput, DOWN, type Game, HK, HP, hashInts, LEFT, LK, LP, RIGHT, toFx, UP } from '@dovus/engine';
+import { cleanInput, DOWN, type Game, hashInts, toFx, UP } from '@dovus/engine';
+import {
+  AIR_RESET_LAND,
+  airAttack,
+  attackFrame,
+  groundAttack,
+  KNOCKDOWN_FRAMES,
+  resolveContacts,
+  WAKEUP_FRAMES,
+} from './combat';
+import { BACK, BUTTONS, COMBO_STATES, DIRS, def, enter, FWD, isAir, NO_TAP, rel, TAP_WINDOW } from './common';
 import { ROSTER } from './kukla';
 import { FLOOR, MAX_SEPARATION, SCREEN_W, STAGE_LEFT, STAGE_RIGHT, STAGE_W, START_OFFSET } from './stage';
-import { type Box, type Fighter, type FighterDef, type FightOptions, type FightState, PHASE, ST } from './types';
+import { type Fighter, type FighterDef, type FightOptions, type FightState, PHASE, ST } from './types';
 
 /** Dövüş simülasyonu: saf `step(durum, girdiler) → yeni durum`. Yalnız tam sayı, 60 Hz sabit adım, dış saat ya da
  *  rastgelelik yok. Dövüşçüler veriyle tanımlanır (FighterDef); burada yalnız ortak kurallar var. */
 
-export const BUTTONS = LP | LK | HP | HK;
-const DIRS = UP | DOWN | LEFT | RIGHT;
-/** Göreli girdide ileri ve geri (rakibe doğru = ileri). */
-export const FWD = RIGHT;
-export const BACK = LEFT;
-/** Çift dokunuş (koşma →→, geri sıçrama ←←) için iki basış arası en çok kare. */
-export const TAP_WINDOW = 12;
-const NO_TAP = -1000;
+export { bodyBox, hitbox, hurtbox, worldBox } from './boxes';
+export { BACK, BUTTONS, def, FWD, rel, TAP_WINDOW } from './common';
+
 /** İtme kutusunun dikey kapsamı (ayaktan yukarı, taban pikseli): yerde 0–100, havada 20–90. Havadaki dövüşçü yeterince
  *  yükselince rakibin üstünden geçebilir. */
 const PUSH_GROUND_H = toFx(100);
 const PUSH_AIR_LOW = toFx(20);
 const PUSH_AIR_HIGH = toFx(90);
-
-export const def = (s: FightState, i: 0 | 1): FighterDef => {
-  const d = ROSTER[s.chars[i]];
-  if (!d) throw new Error(`Kadroda ${s.chars[i]} numaralı dövüşçü yok`);
-  return d;
-};
 
 function newFighter(d: FighterDef, xPx: number, facing: 1 | -1): Fighter {
   return {
@@ -90,20 +89,10 @@ export function initialState(opts: FightOptions | number): FightState {
   };
 }
 
-/** Girdiyi dövüşçünün baktığı yöne göre çevirir: sonuçta RIGHT = ileri, LEFT = geri. */
-export function rel(input: number, facing: 1 | -1): number {
-  if (facing === 1) return input;
-  return (input & ~(LEFT | RIGHT)) | (input & LEFT ? RIGHT : 0) | (input & RIGHT ? LEFT : 0);
-}
-
-const isAir = (state: number): boolean => state === ST.AIR || state === ST.AIR_ATTACK || state === ST.HIT_AIR;
-
-function enter(f: Fighter, state: number, patch: Partial<Fighter> = {}): Fighter {
-  return { ...f, ...patch, state, stateFrame: f.state === state ? f.stateFrame + 1 : 0 };
-}
-
 /** Serbest durumlar (bekleme, yürüme, çömelme, koşma): girdiye göre sıradaki durum. */
-function neutral(f: Fighter, d: FighterDef, r: number, relPrev: number, frame: number): Fighter {
+function neutral(f: Fighter, d: FighterDef, r: number, relPrev: number, pressed: number, frame: number): Fighter {
+  const atk = groundAttack(f, d, r, pressed);
+  if (atk) return atk;
   if (r & UP) return enter(f, ST.PREJUMP, { vx: 0 });
 
   let fwdTap = f.fwdTap;
@@ -133,15 +122,18 @@ function neutral(f: Fighter, d: FighterDef, r: number, relPrev: number, frame: n
 function control(f: Fighter, d: FighterDef, input: number, frame: number): Fighter {
   const r = rel(input, f.facing);
   const relPrev = rel(f.prev, f.facing);
-  const invuln = f.invuln > 0 ? f.invuln - 1 : 0;
-  const g: Fighter = { ...f, invuln };
+  const pressed = (input & ~f.prev & BUTTONS) | f.buffered;
+  const combo = COMBO_STATES.has(f.state) ? {} : { combo: 0, comboDamage: 0 };
+  const g: Fighter = { ...f, ...combo, invuln: f.invuln > 0 ? f.invuln - 1 : 0, buffered: 0 };
+  const free = (h: Fighter): Fighter =>
+    neutral({ ...h, attack: -1, contact: 0, stun: 0 }, d, r, relPrev, pressed, frame);
   switch (f.state) {
     case ST.IDLE:
     case ST.WALK_F:
     case ST.WALK_B:
     case ST.CROUCH:
     case ST.RUN:
-      return neutral(g, d, r, relPrev, frame);
+      return neutral(g, d, r, relPrev, pressed, frame);
     case ST.PREJUMP: {
       if (f.stateFrame + 1 < d.jump.prejump) return enter(g, ST.PREJUMP);
       const hop = !(r & UP);
@@ -149,12 +141,24 @@ function control(f: Fighter, d: FighterDef, input: number, frame: number): Fight
       return enter(g, ST.AIR, { vx, vy: hop ? d.jump.hopVy : d.jump.vy, air: hop ? 1 : 0 });
     }
     case ST.AIR:
-      return enter(g, ST.AIR);
+      return airAttack(g, d, pressed) ?? enter(g, ST.AIR);
+    case ST.AIR_ATTACK:
+      return enter(g, ST.AIR_ATTACK);
+    case ST.ATTACK:
+      return attackFrame(g, d, r, pressed) ?? free(g);
     case ST.LANDING:
-      if (f.stun > 1) return enter(g, ST.LANDING, { stun: f.stun - 1 });
-      return neutral({ ...g, stun: 0 }, d, r, relPrev, frame);
+    case ST.HIT_ST:
+    case ST.HIT_CR:
+    case ST.BLOCK_ST:
+    case ST.BLOCK_CR:
+    case ST.WAKEUP:
+      if (f.stun > 1) return enter(g, f.state, { stun: f.stun - 1 });
+      return free(g);
+    case ST.KNOCKDOWN:
+      if (f.stun > 1) return enter(g, ST.KNOCKDOWN, { stun: f.stun - 1 });
+      return enter(g, ST.WAKEUP, { stun: WAKEUP_FRAMES });
     case ST.BACKDASH: {
-      if (f.stateFrame + 1 >= d.backdash.frames) return neutral(g, d, r, relPrev, frame);
+      if (f.stateFrame + 1 >= d.backdash.frames) return free(g);
       const speed = Math.max(0, d.backdash.vx - d.backdash.decel * (f.stateFrame + 1));
       return enter(g, ST.BACKDASH, { vx: -speed * f.facing });
     }
@@ -163,31 +167,35 @@ function control(f: Fighter, d: FighterDef, input: number, frame: number): Fight
   }
 }
 
-/** Hız ve yerçekimi; yere iniş. */
+/** Hız, geri itilme ve yerçekimi; yere iniş. */
 function physics(f: Fighter, d: FighterDef): Fighter {
   if (isAir(f.state)) {
     const y = f.y + f.vy;
-    if (y >= FLOOR)
-      return {
-        ...f,
-        x: f.x + f.vx,
-        y: FLOOR,
-        vx: 0,
-        vy: 0,
-        state: ST.LANDING,
-        stateFrame: 0,
-        stun: d.jump.land,
-        air: 0,
-      };
-    return { ...f, x: f.x + f.vx, y, vy: f.vy + d.jump.gravity };
+    if (y < FLOOR) return { ...f, x: f.x + f.vx, y, vy: f.vy + d.jump.gravity };
+    const landed = { ...f, x: f.x + f.vx, y: FLOOR, vx: 0, vy: 0, stateFrame: 0, air: 0, attack: -1, contact: 0 };
+    if (f.state === ST.HIT_AIR) {
+      if (f.knock) return { ...landed, state: ST.KNOCKDOWN, stun: KNOCKDOWN_FRAMES, knock: 0 };
+      return { ...landed, state: ST.LANDING, stun: d.jump.land + AIR_RESET_LAND };
+    }
+    return { ...landed, state: ST.LANDING, stun: d.jump.land };
+  }
+  if (f.pushFrames > 0) {
+    const left = f.pushFrames - 1;
+    return { ...f, x: f.x + f.vx + f.pushV, pushFrames: left, pushV: left > 0 ? f.pushV : 0 };
   }
   return { ...f, x: f.x + f.vx };
 }
 
-const clampStage = (f: Fighter): Fighter => {
+/** Sahne kenarını aşan kısım (işaretli, birim). */
+function overshoot(f: Fighter): number {
   const lo = toFx(STAGE_LEFT);
   const hi = toFx(STAGE_RIGHT);
-  return f.x < lo ? { ...f, x: lo } : f.x > hi ? { ...f, x: hi } : f;
+  return f.x < lo ? f.x - lo : f.x > hi ? f.x - hi : 0;
+}
+
+const clampStage = (f: Fighter): Fighter => {
+  const o = overshoot(f);
+  return o === 0 ? f : { ...f, x: f.x - o };
 };
 
 /** İtme kutusunun dikey aralığı [üst, alt] (birim). */
@@ -196,7 +204,14 @@ function pushSpan(f: Fighter): [number, number] {
   return [f.y - PUSH_GROUND_H, f.y];
 }
 
-/** Sahne sınırı, itme kutuları ve ekran genişliği sınırı. prevA/prevB bu karenin başındaki konumlar. */
+/** Köşede: geri itilen kenara dayanırsa, itmenin kenarı aşan kısmı rakibi ters yöne iter. */
+function cornerShare(now: Fighter, before: Fighter): number {
+  if (before.pushFrames === 0) return 0;
+  const o = overshoot(now);
+  return o !== 0 && Math.sign(o) === Math.sign(before.pushV) ? o : 0;
+}
+
+/** Sahne sınırı, köşede itme aktarımı, itme kutuları ve ekran genişliği sınırı. prevA/prevB karenin başındaki hâl. */
 function collide(
   a0: Fighter,
   b0: Fighter,
@@ -205,8 +220,10 @@ function collide(
   prevA: Fighter,
   prevB: Fighter,
 ): [Fighter, Fighter] {
-  let a = clampStage(a0);
-  let b = clampStage(b0);
+  const shareA = cornerShare(a0, prevA);
+  const shareB = cornerShare(b0, prevB);
+  let a = clampStage({ ...a0, x: a0.x - shareB });
+  let b = clampStage({ ...b0, x: b0.x - shareA });
   const lo = toFx(STAGE_LEFT);
   const hi = toFx(STAGE_RIGHT);
 
@@ -261,20 +278,42 @@ function face(f: Fighter, other: Fighter): Fighter {
   return facing === f.facing ? f : { ...f, facing };
 }
 
+/** Vuruş donması: hiçbir şey hareket etmez; basılan tuşlar sonraki ilk serbest kare için saklanır. */
+function freeze(f: Fighter, input: number): Fighter {
+  return { ...f, buffered: f.buffered | (input & ~f.prev & BUTTONS), prev: input };
+}
+
 export function step(s: FightState, inputs: readonly [number, number]): FightState {
   const i0 = cleanInput(inputs[0]);
   const i1 = cleanInput(inputs[1]);
+  const [pa, pb] = s.fighters;
+  if (s.hitstop > 0) {
+    return { ...s, frame: s.frame + 1, hitstop: s.hitstop - 1, fighters: [freeze(pa, i0), freeze(pb, i1)] };
+  }
   const d0 = def(s, 0);
   const d1 = def(s, 1);
-  const [pa, pb] = s.fighters;
 
   let a = physics(control(pa, d0, i0, s.frame), d0);
   let b = physics(control(pb, d1, i1, s.frame), d1);
   [a, b] = collide(a, b, d0, d1, pa, pb);
-  a = { ...face(a, b), prev: i0 };
-  b = { ...face(b, a), prev: i1 };
+  a = face(a, b);
+  b = face(b, a);
+  const hit = resolveContacts(a, b, d0, d1, [i0, i1]);
+  [a, b] = hit.fighters;
+  const spark = hit.spark
+    ? { sparkX: hit.spark.x, sparkY: hit.spark.y, sparkFrame: s.frame + 1, sparkKind: hit.spark.kind }
+    : {};
 
-  return { ...s, frame: s.frame + 1, fighters: [a, b] };
+  return {
+    ...s,
+    ...spark,
+    frame: s.frame + 1,
+    hitstop: hit.hitstop,
+    fighters: [
+      { ...a, prev: i0 },
+      { ...b, prev: i1 },
+    ],
+  };
 }
 
 /** Kameranın sol kenarı, taban pikseli: iki dövüşçünün ortasını izler, sahneden taşmaz. */
@@ -282,44 +321,6 @@ export function cameraX(s: FightState): number {
   const [a, b] = s.fighters;
   const mid = (a.x + b.x) >> 9;
   return Math.min(STAGE_W - SCREEN_W, Math.max(0, mid - SCREEN_W / 2));
-}
-
-/** Veri kutusunu (taban pikseli, sağa bakarken) dünya birimine çevirir. */
-export function worldBox(f: Fighter, b: Box): Box {
-  return {
-    x: f.facing === 1 ? f.x + toFx(b.x) : f.x - toFx(b.x + b.w),
-    y: f.y + toFx(b.y),
-    w: toFx(b.w),
-    h: toFx(b.h),
-  };
-}
-
-const CROUCH_STATES: ReadonlySet<number> = new Set([ST.CROUCH, ST.BLOCK_CR, ST.HIT_CR]);
-
-const LYING_STATES: ReadonlySet<number> = new Set([ST.KNOCKDOWN, ST.KO]);
-
-/** Gövde kutusu (çizim için): duruşa göre ayakta, çömelik, havada ya da yerde yatan. */
-export function bodyBox(f: Fighter, d: FighterDef): Box {
-  if (LYING_STATES.has(f.state)) return worldBox(f, { x: -80, y: -36, w: 160, h: 36 });
-  if (CROUCH_STATES.has(f.state)) return worldBox(f, d.crouchHurt);
-  if (isAir(f.state)) return worldBox(f, d.airHurt);
-  return worldBox(f, d.standHurt);
-}
-
-/** Vurulabilir kutu (dünya birimi); yerde yatarken, kalkarken, havada savrulurken ya da dokunulmazken yok. */
-export function hurtbox(f: Fighter, d: FighterDef): Box | null {
-  if (f.invuln > 0 || f.state === ST.WAKEUP || f.state === ST.HIT_AIR || LYING_STATES.has(f.state)) return null;
-  return bodyBox(f, d);
-}
-
-/** Vuruş kutusu yalnız saldırının aktif karelerinde (dünya birimi). */
-export function hitbox(f: Fighter, d: FighterDef): Box | null {
-  if ((f.state !== ST.ATTACK && f.state !== ST.AIR_ATTACK) || f.attack < 0) return null;
-  const atk = d.attacks[f.attack];
-  if (!atk) return null;
-  const t = f.stateFrame;
-  if (t < atk.startup || t >= atk.startup + atk.active) return null;
-  return worldBox(f, atk.box);
 }
 
 function fighterInts(f: Fighter): number[] {
