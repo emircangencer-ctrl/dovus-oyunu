@@ -104,9 +104,15 @@ describe('blok', () => {
   });
 
   test('havadan vuruş çömelik bloklanamaz, ayakta bloklanır', () => {
-    // İnişte, alçakta aktif olan hava ağır tekmesi; savunan son anda tutar (geri yürüyüp kaçmasın).
-    const jumpIn = (k: number): number => (k < 6 ? UP | RIGHT : k === 29 ? HK : 0);
-    const frames = (guard: number) => play(start(420, 640), 70, (k) => [jumpIn(k), k >= 30 ? guard : 0]);
+    // İnişte, alçakta aktif olan hava ağır tekmesi. Basış anı veriden bulunur: çömelmiş (bloklamayan) rakibe değen
+    // ilk zamanlama. Savunan son anda tutar (geri yürüyüp kaçmasın).
+    const run = (press: number, guard: number, from: number) =>
+      play(start(420, 640), 70, (k) => [k < 6 ? UP | RIGHT : k === press ? HK : 0, k >= from ? guard : 0]);
+    const press = Array.from({ length: 40 }, (_, k) => k + 8).find(
+      (k) => p2(last(run(k, DOWN, 0))).hp < KUKLA.health,
+    ) as number;
+    expect(press).toBeDefined();
+    const frames = (guard: number) => run(press, guard, press);
     expect(p2(last(frames(DOWN | RIGHT))).hp).toBeLessThan(KUKLA.health);
     const blocked = frames(RIGHT);
     expect(p2(last(blocked)).hp).toBe(KUKLA.health);

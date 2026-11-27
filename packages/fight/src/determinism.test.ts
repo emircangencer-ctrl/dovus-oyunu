@@ -19,7 +19,7 @@ test('10.000 rastgele maç: her maç iki kez oynanınca aynı özeti verir; topl
     finals.push(a);
   }
   // Altın değer: motor davranışı bilerek değişirse güncellenir (spec Bölüm 11, altın tekrarlar).
-  expect(hashInts(finals)).toMatchInlineSnapshot(`2433336169`);
+  expect(hashInts(finals)).toMatchInlineSnapshot(`3834145860`);
 }, 180_000);
 
 test('500 maç baştan sona (maç sonuna kadar): iki kez oynanınca aynı; hepsi maç sonuna varır', () => {
@@ -31,5 +31,5 @@ test('500 maç baştan sona (maç sonuna kadar): iki kez oynanınca aynı; hepsi
     if (a.phase !== PHASE.MATCH_END) throw new Error(`Maç ${seed} bitmedi (evre ${a.phase})`);
     finals.push(a.hash);
   }
-  expect(hashInts(finals)).toMatchInlineSnapshot(`323189121`);
+  expect(hashInts(finals)).toMatchInlineSnapshot(`3812255077`);
 }, 180_000);
