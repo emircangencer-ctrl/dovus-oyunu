@@ -33,14 +33,8 @@ export const MENU_ITEMS: readonly MenuItem[] = [
   { id: 'antrenman', label: 'ANTRENMAN', ready: true, about: 'Hareketlerini kuklaya karşı dene, kombolarını çalış.' },
   { id: 'profil', label: 'PROFİL VE SIRALAMA', ready: false, about: 'Maçların, puanın ve sezon sıralaması.' },
   { id: 'ayarlar', label: 'AYARLAR', ready: false, about: 'Kontroller, görüntü ve ses.' },
-  {
-    id: 'studyo',
-    label: 'KARAKTER STÜDYOSU',
-    ready: false,
-    soon: true,
-    about: 'Kendi karakterini çiz, hareketlerini ayarla.',
-  },
 ];
+// Karakter tasarımı oyuncu menüsünde yok: yalnız Emir'in yönetim panelinde (ayrı, korumalı adres).
 
 export type MenuAction = 'yukari' | 'asagi' | 'sec' | 'geri' | 'herhangi' | { odak: number } | { tikla: number };
 

@@ -25,7 +25,7 @@ test('Enter ana menüyü açar; oklarla gezilir, hazır olmayan seçenek YAKINDA
   const menu = page.getByTestId('ana-menu');
   await expect(menu).toBeVisible();
   const items = page.getByTestId('menu-secenek');
-  await expect(items).toHaveCount(8);
+  await expect(items).toHaveCount(7);
   await expect(items.nth(0)).toHaveAttribute('aria-current', 'true');
 
   await page.keyboard.press('ArrowDown');

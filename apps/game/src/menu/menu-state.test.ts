@@ -22,7 +22,7 @@ describe('başlık ekranı', () => {
 });
 
 describe('ana menü', () => {
-  test('8 seçenek; Karakter Stüdyosu "yakında" etiketli', () => {
+  test("7 seçenek; karakter tasarımı oyuncu menüsünde yok (yalnız Emir'in yönetim panelinde)", () => {
     expect(MENU_ITEMS.map((i) => i.label)).toEqual([
       'ARCADE',
       'VERSUS',
@@ -31,9 +31,8 @@ describe('ana menü', () => {
       'ANTRENMAN',
       'PROFİL VE SIRALAMA',
       'AYARLAR',
-      'KARAKTER STÜDYOSU',
     ]);
-    expect(MENU_ITEMS.at(-1)?.soon).toBe(true);
+    expect(MENU_ITEMS.some((i) => i.id === 'studyo')).toBe(false);
   });
 
   test('aşağı ve yukarı odağı taşır; uçlarda başa ve sona sarar', () => {
